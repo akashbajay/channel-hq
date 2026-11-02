@@ -326,6 +326,17 @@ function postDelta(pageId, id, views) {
 // GitHub Pages, where GitHub Actions publishes the stats encrypted with the dashboard passcode.
 const CLOUD = location.hostname.endsWith('github.io');
 const DATA_URL = 'https://raw.githubusercontent.com/akashbajay/channel-hq/data/data.enc';
+const API_URL = 'https://api.github.com/repos/akashbajay/channel-hq/contents/data.enc?ref=data';
+// raw.githubusercontent.com serves a copy up to 5 min old whatever the URL, so ask the API first.
+// 'no-cache' makes the browser revalidate with the ETag; GitHub doesn't count the "not modified"
+// answers against its 60-an-hour limit, so checking every minute is fine. Raw is the fallback.
+async function fetchBox() {
+  try {
+    const r = await fetch(API_URL, { cache: 'no-cache', headers: { Accept: 'application/vnd.github.raw' } });
+    if (r.ok) return await r.json();
+  } catch {}
+  return (await fetch(DATA_URL + '?t=' + Date.now(), { cache: 'no-store' })).json();
+}
 const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} } };
 const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 const keys = {};
@@ -341,7 +352,7 @@ async function decrypt(box, pass) {
 async function fetchCloud() {
   const pass = store.get('hq-pass');
   if (!pass) { showLock(); throw new Error('locked'); }
-  const box = await (await fetch(DATA_URL + '?t=' + Date.now(), { cache: 'no-store' })).json();
+  const box = await fetchBox();
   try { return await decrypt(box, pass); } catch { store.set('hq-pass', null); showLock('That passcode didn\'t work.'); throw new Error('locked'); }
 }
 function showLock(msg = '') { $('lockErr').textContent = msg; $('lock').classList.add('show'); setTimeout(() => $('pass').focus(), 50); }
