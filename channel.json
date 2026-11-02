@@ -1,0 +1,81 @@
+{
+  "name": "Ship It With Claude",
+  "handle": "@shipitwithclaude",
+  "defaultTime": "18:30",
+  "platforms": [
+    "youtube",
+    "instagram"
+  ],
+  "hashtags": [
+    "#claudecode",
+    "#vibecoding",
+    "#buildinpublic",
+    "#aitools",
+    "#indiehacker"
+  ],
+  "cta": "Follow so you don't miss tomorrow's episode 👀",
+  "youtube": {
+    "privacy": "public",
+    "tags": [
+      "claude",
+      "ai coding",
+      "build in public",
+      "vibe coding",
+      "indie hacker"
+    ]
+  },
+  "accounts": {
+    "tilesofeden": {
+      "name": "Tiles of Eden",
+      "handle": "@tilesofeden",
+      "defaultTime": "18:30",
+      "hashtags": [
+        "#bible",
+        "#biblestories",
+        "#genesis",
+        "#mosaic",
+        "#scripture",
+        "#faith"
+      ],
+      "cta": "📖 Follow — a new story every day, from Genesis onward.",
+      "youtube": {
+        "privacy": "public",
+        "categoryId": "27",
+        "tags": [
+          "bible",
+          "bible stories",
+          "genesis",
+          "animated bible",
+          "byzantine mosaic",
+          "scripture"
+        ]
+      }
+    },
+    "thelivingword": {
+      "name": "The Living Word",
+      "handle": "@thelivingword.film",
+      "defaultTime": "18:30",
+      "hashtags": [
+        "#bible",
+        "#biblestories",
+        "#christianfilm",
+        "#genesis",
+        "#scripture",
+        "#faith"
+      ],
+      "cta": "🎞️ Follow — a new scene every day, from the first breath to the last word.",
+      "youtube": {
+        "privacy": "public",
+        "categoryId": "1",
+        "tags": [
+          "bible",
+          "bible movie",
+          "bible stories",
+          "christian film",
+          "genesis",
+          "scripture"
+        ]
+      }
+    }
+  }
+}

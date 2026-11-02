@@ -1,0 +1,38 @@
+# Collects every channel's stats every 10 minutes and publishes them, encrypted, to the
+# "data" branch, where the Channel HQ phone app reads them.
+name: Collect stats
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: collect
+  cancel-in-progress: false
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch the last run
+        run: git fetch --depth 1 origin data && git show origin/data:data.enc > prev.enc || touch prev.enc
+      - name: Collect
+        run: node dashboard/cloud-collect.mjs prev.enc queue/queue.enc out/data.enc
+        env:
+          SECRETS_JSON: ${{ secrets.SECRETS_JSON }}
+          DASH_PASSCODE: ${{ secrets.DASH_PASSCODE }}
+          SNAPSHOT_MINUTES: '5'
+      - name: Publish
+        working-directory: out
+        run: |
+          git init -q -b data
+          git config user.name "channel-hq-bot"
+          git config user.email "channel-hq-bot@users.noreply.github.com"
+          git add data.enc
+          git commit -q -m "stats $(date -u +%FT%TZ)"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" data
