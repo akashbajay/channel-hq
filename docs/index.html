@@ -469,7 +469,7 @@ function platPanel(p, k) {
   const best = [...posts].sort((a, b) => (b.views || 0) - (a.views || 0))[0];
   const avg = k === 'yt'
     ? (watched.some(v => v.avgViewPct != null) ? Math.round(watched.reduce((n, v) => n + (v.avgViewPct || 0), 0) / watched.filter(v => v.avgViewPct != null).length) + '%' : '–')
-    : (watched.length ? (watched.reduce((n, v) => n + (v.avgWatchSec || 0), 0) / watched.length).toFixed(1) + 's' : '–');
+    : (reels => reels.length ? (reels.reduce((n, v) => n + v.avgWatchSec, 0) / reels.length).toFixed(1) + 's' : '–')(watched.filter(v => v.avgWatchSec != null)); // carousels have no watch time
   const views = k === 'yt' ? t.ytViews : t.igViews, g = grew(p, k === 'yt' ? 'ytViews' : 'igViews');
   return `<div>${head}
     <div class="pv">${full(views)}</div><div class="sub" style="font-size:12px">views${g ? ` · <span class="delta">+${full(g)}</span> 24h` : ''}</div>

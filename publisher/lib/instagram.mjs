@@ -30,14 +30,14 @@ export async function whoami(token, userId) {
   return { user_id: me.id, username: me.username };
 }
 
-export async function publishReel(env, { file, caption, account }) {
+export async function publishReel(env, { file, caption, account, coverUrl }) {
   const { access_token, user_id, host } = await auth(account);
   const v = env.IG_API_VERSION || 'v23.0';
   const size = fs.statSync(file).size;
 
   const container = await api(`${host}/${v}/${user_id}/media`, {
     method: 'POST',
-    body: new URLSearchParams({ media_type: 'REELS', upload_type: 'resumable', caption, share_to_feed: 'true', access_token }),
+    body: new URLSearchParams({ media_type: 'REELS', upload_type: 'resumable', caption, share_to_feed: 'true', ...(coverUrl && { cover_url: coverUrl }), access_token }),
   });
   const uploadUrl = container.uri || `https://rupload.facebook.com/ig-api-upload/${v}/${container.id}`;
   await api(uploadUrl, {
@@ -62,3 +62,61 @@ export async function publishReel(env, { file, caption, account }) {
   const media = await api(`${host}/${v}/${post.id}?fields=permalink&access_token=${access_token}`);
   return { id: post.id, url: media.permalink };
 }
+
+// Carousel: Instagram fetches each slide from a public URL (images have no upload endpoint), so host them first.
+export async function publishCarousel(env, { urls, caption, account }) {
+  const { access_token, user_id, host } = await auth(account);
+  const v = env.IG_API_VERSION || 'v23.0';
+  const children = [];
+  for (const image_url of urls) {
+    const c = await api(`${host}/${v}/${user_id}/media`, {
+      method: 'POST',
+      body: new URLSearchParams({ image_url, is_carousel_item: 'true', access_token }),
+    });
+    children.push(c.id);
+  }
+  const container = await api(`${host}/${v}/${user_id}/media`, {
+    method: 'POST',
+    body: new URLSearchParams({ media_type: 'CAROUSEL', children: children.join(','), caption, access_token }),
+  });
+  for (let i = 0; ; i++) {
+    const s = await api(`${host}/${v}/${container.id}?fields=status_code,status&access_token=${access_token}`);
+    if (s.status_code === 'FINISHED') break;
+    if (s.status_code === 'ERROR' || s.status_code === 'EXPIRED') throw new Error(`Instagram processing failed: ${s.status}`);
+    if (i >= 30) throw new Error('Instagram processing timed out after 5 min');
+    await sleep(10_000);
+  }
+  const post = await api(`${host}/${v}/${user_id}/media_publish`, {
+    method: 'POST',
+    body: new URLSearchParams({ creation_id: container.id, access_token }),
+  });
+  const media = await api(`${host}/${v}/${post.id}?fields=permalink&access_token=${access_token}`);
+  return { id: post.id, url: media.permalink };
+}
+
+// Single photo (feed) or story. Both take a public image_url; video stories would need the video hosted too,
+// and the GitHub media repo can't take ~40 MB files, so stories are images only for now.
+async function publishImageMedia(env, { url, caption, account, story }) {
+  const { access_token, user_id, host } = await auth(account);
+  const v = env.IG_API_VERSION || 'v23.0';
+  const container = await api(`${host}/${v}/${user_id}/media`, {
+    method: 'POST',
+    body: new URLSearchParams({ image_url: url, ...(story ? { media_type: 'STORIES' } : { caption }), access_token }),
+  });
+  for (let i = 0; ; i++) {
+    const s = await api(`${host}/${v}/${container.id}?fields=status_code,status&access_token=${access_token}`);
+    if (s.status_code === 'FINISHED') break;
+    if (s.status_code === 'ERROR' || s.status_code === 'EXPIRED') throw new Error(`Instagram processing failed: ${s.status}`);
+    if (i >= 30) throw new Error('Instagram processing timed out after 5 min');
+    await sleep(10_000);
+  }
+  const post = await api(`${host}/${v}/${user_id}/media_publish`, {
+    method: 'POST',
+    body: new URLSearchParams({ creation_id: container.id, access_token }),
+  });
+  const media = await api(`${host}/${v}/${post.id}?fields=permalink&access_token=${access_token}`).catch(() => ({}));
+  return { id: post.id, url: media.permalink || `story:${post.id}` };   // stories have no permalink
+}
+
+export const publishImage = (env, opts) => publishImageMedia(env, opts);
+export const publishStory = (env, opts) => publishImageMedia(env, { ...opts, story: true });

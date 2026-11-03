@@ -28,7 +28,7 @@ export async function accessToken(env, account) {
   return j.access_token;
 }
 
-export async function uploadShort(env, { file, title, description, tags = [], privacy = 'public', categoryId = '23', account }) {
+export async function uploadShort(env, { file, title, description, tags = [], privacy = 'public', categoryId = '23', account, thumbnail }) {
   const token = await accessToken(env, account);
   const size = fs.statSync(file).size;
   const meta = {
@@ -51,5 +51,18 @@ export async function uploadShort(env, { file, title, description, tags = [], pr
     headers: { 'Content-Type': 'video/mp4', 'Content-Length': String(size) },
     body: fs.readFileSync(file),
   });
-  return { id: video.id, url: `https://youtube.com/shorts/${video.id}`, privacy: video.status?.privacyStatus };
+  const result = { id: video.id, url: `https://youtube.com/shorts/${video.id}`, privacy: video.status?.privacyStatus };
+  // A failed thumbnail must not fail the post: the video is already up.
+  if (thumbnail) result.thumbnail = await setThumbnail(env, { videoId: video.id, file: thumbnail, account }).then(() => 'set', e => `error: ${e.message}`);
+  return result;
+}
+
+// Custom thumbnails need a phone-verified channel; images must be under 2 MB.
+export async function setThumbnail(env, { videoId, file, account }) {
+  const token = await accessToken(env, account);
+  return api(`https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${videoId}&uploadType=media`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'image/jpeg' },
+    body: fs.readFileSync(file),
+  });
 }

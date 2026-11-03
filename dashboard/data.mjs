@@ -36,10 +36,11 @@ async function instagram(page) {
   const q = `access_token=${access_token}`;
   const profile = await api(`${host}/${v}/${user_id}?fields=username,followers_count,media_count&${q}`);
   const media = await api(`${host}/${v}/${user_id}/media?fields=id,caption,permalink,timestamp,like_count,comments_count,media_product_type,thumbnail_url&limit=25&${q}`);
-  const metrics = 'views,reach,shares,saved,ig_reels_avg_watch_time';
+  // Watch time only exists for Reels; asking for it on a carousel or photo fails the whole request.
+  const metricsFor = m => 'views,reach,shares,saved' + (m.media_product_type === 'REELS' ? ',ig_reels_avg_watch_time' : '');
   const posts = await Promise.all(media.data.map(async m => {
     const [ins, com] = await Promise.all([
-      settle(api(`${host}/${v}/${m.id}/insights?metric=${metrics}&${q}`)),
+      settle(api(`${host}/${v}/${m.id}/insights?metric=${metricsFor(m)}&${q}`)),
       m.comments_count ? settle(api(`${host}/${v}/${m.id}/comments?fields=id,text,username,timestamp&limit=10&${q}`)) : { data: [] },
     ]);
     const stats = ins.data ? Object.fromEntries(ins.data.map(x => [x.name, x.values[0].value])) : {};
@@ -108,7 +109,7 @@ function tracker(page, queue, ig, yt) {
     };
     // Once it has gone out, show when it actually posted rather than the planned slot.
     const posted = Object.values(p.results || {}).map(r => r.postedAt).filter(Boolean).sort()[0];
-    return { slug: p.slug, title: p.youtube?.title?.replace(/\s*#Shorts$/i, '') || p.slug, publishAt: posted || p.publishAt, approved: p.approved, youtube: plat('youtube'), instagram: plat('instagram') };
+    return { slug: p.slug, title: p.youtube?.title?.replace(/\s*#Shorts$/i, '') || p.title || p.slug, publishAt: posted || p.publishAt, approved: p.approved, youtube: plat('youtube'), instagram: plat('instagram') };
   });
   // Posts made outside the queue (by hand in the app) still count.
   const known = new Set(mine.flatMap(p => [p.results?.youtube?.id, p.results?.instagram?.id]).filter(Boolean));
