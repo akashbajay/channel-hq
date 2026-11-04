@@ -13,7 +13,7 @@
     "#aitools",
     "#indiehacker"
   ],
-  "cta": "Follow so you don't miss tomorrow's episode 👀",
+  "cta": "Follow so you don't miss tomorrow's episode \ud83d\udc40",
   "youtube": {
     "privacy": "public",
     "tags": [
@@ -37,7 +37,7 @@
         "#scripture",
         "#faith"
       ],
-      "cta": "📖 Follow — a new story every day, from Genesis onward.",
+      "cta": "\ud83d\udcd6 Follow \u2014 a new story every day, from Genesis onward.",
       "youtube": {
         "privacy": "public",
         "categoryId": "27",
@@ -63,7 +63,7 @@
         "#scripture",
         "#faith"
       ],
-      "cta": "🎞️ Follow — a new scene every day, from the first breath to the last word.",
+      "cta": "\ud83c\udf9e\ufe0f Follow \u2014 a new scene every day, from the first breath to the last word.",
       "youtube": {
         "privacy": "public",
         "categoryId": "1",
@@ -74,6 +74,37 @@
           "christian film",
           "genesis",
           "scripture"
+        ]
+      }
+    },
+    "lotllab": {
+      "name": "Lotl Lab",
+      "handle": "@LotlLab",
+      "defaultTime": "22:30",
+      "platforms": [
+        "youtube",
+        "instagram"
+      ],
+      "hashtags": [
+        "#whatif",
+        "#science",
+        "#technology",
+        "#explained",
+        "#ai"
+      ],
+      "cta": "\ud83e\udd8e Subscribe for a new \"what if\" every day.",
+      "youtube": {
+        "privacy": "public",
+        "categoryId": "27",
+        "tags": [
+          "what if",
+          "science explained",
+          "technology",
+          "animated explainer",
+          "ai",
+          "cybersecurity",
+          "lotl lab",
+          "axolotl"
         ]
       }
     }

@@ -1,6 +1,6 @@
 // Network first, so a new version of the app shows up on the next open; the cached copy is
 // only for when the phone is offline. The stats are fetched cross-origin and never cached here.
-const CACHE = 'channel-hq-v3';
+const CACHE = 'channel-hq-v4';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))); self.skipWaiting(); });

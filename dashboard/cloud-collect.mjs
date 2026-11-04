@@ -23,9 +23,10 @@ if (fs.existsSync(queueFile)) {
 // data.mjs keeps its history in logs/stats-history.jsonl, so seed that from the last run.
 const historyFile = path.join(ROOT, 'logs', 'stats-history.jsonl');
 fs.mkdirSync(path.dirname(historyFile), { recursive: true });
+let prev;
 if (fs.existsSync(prevFile) && fs.statSync(prevFile).size) {
   try {
-    const prev = decrypt(fs.readFileSync(prevFile, 'utf8'), pass);
+    prev = decrypt(fs.readFileSync(prevFile, 'utf8'), pass);
     fs.writeFileSync(historyFile, prev.history.map(h => JSON.stringify(h)).join('\n') + '\n');
   } catch (e) {
     console.warn(`Previous data unreadable (${e.message}); starting history fresh.`);
@@ -33,7 +34,7 @@ if (fs.existsSync(prevFile) && fs.statSync(prevFile).size) {
 }
 
 const { collect } = await import('./data.mjs');
-const data = await collect();
+const data = await collect(prev);
 
 // Keep every snapshot for 14 days, then one per day, so the file stays small.
 const cutoff = Date.now() - 14 * 86400e3, seenDays = new Set();

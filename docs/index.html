@@ -140,6 +140,25 @@ tfoot td:first-child { border-bottom-left-radius: 14px; } tfoot td:last-child { 
 .share { color: var(--muted); font-size: 12px; margin-left: 6px; }
 td.big-n { font-size: 15px; font-weight: 700; }
 
+/* On phones the channel table becomes one block per channel, so the YouTube and Instagram
+   columns can't end up hidden off the right edge. */
+@media (max-width: 640px) {
+  #matrixTable thead { display: none; }
+  #matrixTable tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px; padding: 14px 16px; border-bottom: 1px solid var(--grid); }
+  #matrixTable tbody tr:hover td { background: none; }
+  #matrixTable td { padding: 0; border: 0; text-align: left; background: none !important; border-radius: 0 !important; font-size: 15px; font-weight: 700; }
+  #matrixTable td:first-child { grid-column: 1 / -1; font-size: 14px; }
+  #matrixTable td.split-cell { grid-column: 1 / -1; }
+  #matrixTable td.split-cell .vbar { min-width: 0; }
+  #matrixTable td[data-l]::before { content: attr(data-l); display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 2px; }
+  /* label text stays in ink; a small platform swatch carries the color */
+  #matrixTable td[data-p]::before { padding-left: 13px; background: linear-gradient(var(--sw), var(--sw)) left center / 8px 8px no-repeat; }
+  #matrixTable td[data-p="yt"] { --sw: var(--yt); }
+  #matrixTable td[data-p="ig"] { --sw: var(--ig); }
+  #matrixTable td .share { display: block; margin: 0; font-weight: 400; }
+  #matrixTable tfoot tr { background: var(--surface-2); border-radius: 0 0 14px 14px; border-bottom: 0; }
+}
+
 /* channel panels */
 .chans { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
 @media (max-width: 400px) { .chans { grid-template-columns: 1fr; } }
@@ -239,7 +258,7 @@ main { padding-bottom: max(64px, env(safe-area-inset-bottom)); }
   <section class="card kpis" id="kpis"></section>
 
   <div class="sec-head" id="by-channel"><div><h2>Views by channel</h2><p>Every channel's total, split into YouTube and Instagram.</p></div></div>
-  <section class="card tablewrap"><table>
+  <section class="card tablewrap"><table id="matrixTable">
     <thead><tr><th>Channel</th><th class="n">Total views</th><th class="n"><span class="plat-h" style="justify-content:flex-end"><span data-icon="yt"></span>YouTube</span></th><th class="n"><span class="plat-h" style="justify-content:flex-end"><span data-icon="ig"></span>Instagram</span></th><th>Split</th><th class="n">Last 24h</th><th class="n">Followers</th></tr></thead>
     <tbody id="matrix"></tbody><tfoot id="matrixFoot"></tfoot>
   </table></section>
@@ -444,16 +463,16 @@ function renderMatrix() {
     const t = p.totals, g = grew(p);
     return `<tr data-id="${p.id}">
       <td><div class="chan"><span class="sw" style="background:${color[p.id]}"></span><div><b>${esc(p.name)}</b><small>${esc(p.handle)}</small></div></div></td>
-      <td class="n big-n">${full(t.views)}<span class="share">${pct(t.views, all)}%</span></td>
-      <td class="n">${full(t.ytViews)}</td>
-      <td class="n">${full(t.igViews)}</td>
-      <td>${bar(t.ytViews, t.igViews, max)}</td>
-      <td class="n">${g ? `<span class="delta">+${full(g)}</span>` : '<span class="sub">—</span>'}</td>
-      <td class="n">${full(t.followers)}</td></tr>`;
+      <td class="n big-n" data-l="Total views">${full(t.views)}<span class="share">${pct(t.views, all)}%</span></td>
+      <td class="n" data-l="YouTube" data-p="yt">${full(t.ytViews)}</td>
+      <td class="n" data-l="Instagram" data-p="ig">${full(t.igViews)}</td>
+      <td class="split-cell">${bar(t.ytViews, t.igViews, max)}</td>
+      <td class="n" data-l="Last 24h">${g ? `<span class="delta">+${full(g)}</span>` : '<span class="sub">—</span>'}</td>
+      <td class="n" data-l="Followers">${full(t.followers)}</td></tr>`;
   }).join('');
-  $('matrixFoot').innerHTML = `<tr><td>All channels</td><td class="n">${full(all)}</td><td class="n">${full(sumP('ytViews'))}</td><td class="n">${full(sumP('igViews'))}</td>
-    <td><div class="legend" style="margin:0"><span><span class="sw" style="background:var(--yt)"></span>YouTube</span><span><span class="sw" style="background:var(--ig)"></span>Instagram</span></div></td>
-    <td class="n">${grewAll('views') ? `<span class="delta">+${full(grewAll('views'))}</span>` : '—'}</td><td class="n">${full(sumP('followers'))}</td></tr>`;
+  $('matrixFoot').innerHTML = `<tr><td>All channels</td><td class="n" data-l="Total views">${full(all)}</td><td class="n" data-l="YouTube" data-p="yt">${full(sumP('ytViews'))}</td><td class="n" data-l="Instagram" data-p="ig">${full(sumP('igViews'))}</td>
+    <td class="split-cell"><div class="legend" style="margin:0"><span><span class="sw" style="background:var(--yt)"></span>YouTube</span><span><span class="sw" style="background:var(--ig)"></span>Instagram</span></div></td>
+    <td class="n" data-l="Last 24h">${grewAll('views') ? `<span class="delta">+${full(grewAll('views'))}</span>` : '—'}</td><td class="n" data-l="Followers">${full(sumP('followers'))}</td></tr>`;
   $('matrix').querySelectorAll('tr').forEach(tr => {
     const p = data.pages.find(x => x.id === tr.dataset.id);
     tr.onmousemove = e => tip(e, tipFor(p.name, p.totals, grew(p)));
@@ -464,6 +483,7 @@ function renderMatrix() {
 function platPanel(p, k) {
   const x = k === 'yt' ? p.youtube : p.instagram, t = p.totals, head = `<div class="plat-h">${PLAT[k].icon}${PLAT[k].name}</div>`;
   if (x.error) return `<div>${head}<div class="off" style="color:var(--critical)">Couldn't load — see Connections</div></div>`;
+  const staleNote = x.stale ? `<div class="sub" style="font-size:11.5px;color:var(--serious);margin-top:4px">⚠ Last update failed — showing numbers from ${ago(x.stale.since)}</div>` : '';
   if (!x.connected) return `<div>${head}<div class="off">Not connected yet.<br><code>${k === 'yt' ? 'auth-youtube' : 'ig-token'}.mjs --account ${esc(p.id)}</code></div></div>`;
   const posts = x.posts, watched = posts.filter(v => v.views);
   const best = [...posts].sort((a, b) => (b.views || 0) - (a.views || 0))[0];
@@ -472,7 +492,7 @@ function platPanel(p, k) {
     : (reels => reels.length ? (reels.reduce((n, v) => n + v.avgWatchSec, 0) / reels.length).toFixed(1) + 's' : '–')(watched.filter(v => v.avgWatchSec != null)); // carousels have no watch time
   const views = k === 'yt' ? t.ytViews : t.igViews, g = grew(p, k === 'yt' ? 'ytViews' : 'igViews');
   return `<div>${head}
-    <div class="pv">${full(views)}</div><div class="sub" style="font-size:12px">views${g ? ` · <span class="delta">+${full(g)}</span> 24h` : ''}</div>
+    ${staleNote}<div class="pv">${full(views)}</div><div class="sub" style="font-size:12px">views${g ? ` · <span class="delta">+${full(g)}</span> 24h` : ''}</div>
     <div class="mini">
       <div><b>${full(k === 'yt' ? t.ytSubs : t.igFollowers)}</b>${k === 'yt' ? 'subscribers' : 'followers'}</div>
       <div><b>${full(posts.length)}</b>${k === 'yt' ? 'videos' : 'reels'}</div>
@@ -612,6 +632,7 @@ function renderIssues() {
   for (const p of data.pages) {
     for (const [k, x] of [['YouTube', p.youtube], ['Instagram', p.instagram]]) {
       if (x.error) out.push([p, `${k}: ${x.error}`]);
+      else if (x.stale) out.push([p, `${k}: last update failed (${x.stale.error}); showing numbers from ${ago(x.stale.since)}`]);
       else if (x.connected === false) out.push([p, `${k} not connected yet`]);
     }
     if (p.youtube.commentsError) out.push([p, 'YouTube comment text needs a re-login with comment access (counts still work)']);

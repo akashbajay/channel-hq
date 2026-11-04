@@ -120,10 +120,24 @@ function tracker(page, queue, ig, yt) {
 
 const sum = (xs, k) => xs.reduce((n, x) => n + (x[k] || 0), 0);
 
-export async function collect() {
+// A platform that fails one fetch (a network blip, a 5xx) keeps its last good numbers, marked
+// stale, instead of dropping to zero. `prev` is the last collected data (the cloud passes the
+// previous run's); in the Mac server the last good result is remembered in memory.
+const lastGood = {};
+function keepLastGood(page, platform, fresh, prev) {
+  const id = `${page.id}:${platform}`;
+  if (!fresh.error) return (lastGood[id] = { ...fresh, at: new Date().toISOString() });
+  const old = lastGood[id] || prev?.pages?.find(p => p.id === page.id)?.[platform];
+  return old && !old.error && old.connected !== false ? { ...old, stale: { error: fresh.error, since: old.stale?.since || old.at || prev?.at } } : fresh;
+}
+
+export async function collect(prev) {
   const queue = queuedPosts();
   const out = await Promise.all(pages().map(async page => {
-    const [ig, yt] = await Promise.all([settle(instagram(page)), settle(youtube(page))]);
+    const [ig, yt] = await Promise.all([
+      settle(instagram(page)).then(x => keepLastGood(page, 'instagram', x, prev)),
+      settle(youtube(page)).then(x => keepLastGood(page, 'youtube', x, prev)),
+    ]);
     const igPosts = ig.posts || [], ytPosts = yt.posts || [];
     // Every number is kept per platform; the combined figures are just their sums.
     // YouTube's channel counter lags the per-video counts, so take whichever is higher.

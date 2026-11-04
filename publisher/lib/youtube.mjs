@@ -28,7 +28,7 @@ export async function accessToken(env, account) {
   return j.access_token;
 }
 
-export async function uploadShort(env, { file, title, description, tags = [], privacy = 'public', categoryId = '23', account, thumbnail }) {
+export async function uploadShort(env, { file, title, description, tags = [], privacy = 'public', categoryId = '23', account, thumbnail, long = false }) {
   const token = await accessToken(env, account);
   const size = fs.statSync(file).size;
   const meta = {
@@ -51,7 +51,7 @@ export async function uploadShort(env, { file, title, description, tags = [], pr
     headers: { 'Content-Type': 'video/mp4', 'Content-Length': String(size) },
     body: fs.readFileSync(file),
   });
-  const result = { id: video.id, url: `https://youtube.com/shorts/${video.id}`, privacy: video.status?.privacyStatus };
+  const result = { id: video.id, url: long ? `https://youtube.com/watch?v=${video.id}` : `https://youtube.com/shorts/${video.id}`, privacy: video.status?.privacyStatus };
   // A failed thumbnail must not fail the post: the video is already up.
   if (thumbnail) result.thumbnail = await setThumbnail(env, { videoId: video.id, file: thumbnail, account }).then(() => 'set', e => `error: ${e.message}`);
   return result;
